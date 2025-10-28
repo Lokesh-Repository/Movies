@@ -18,24 +18,10 @@ interface VercelResponse extends ServerResponse {
 dotenv.config();
 
 // CORS headers function
-function setCorsHeaders(res: VercelResponse, origin?: string) {
-  const allowedOrigins = [
-    process.env.FRONTEND_URL || "http://localhost:5173",
-    "https://movies-frontend-ochre.vercel.app",
-    "http://localhost:5173"
-  ];
-  
-  const isAllowed = origin && (
-    allowedOrigins.includes(origin) || 
-    origin.endsWith('.vercel.app')
-  );
-  
-  const allowedOrigin = isAllowed ? origin : allowedOrigins[0];
-  
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+function setCorsHeaders(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
 }
 
 // Initialize Prisma lazily
@@ -66,10 +52,8 @@ async function getPrismaClient() {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const origin = req.headers.origin as string;
-  
   // Set CORS headers
-  setCorsHeaders(res, origin);
+  setCorsHeaders(res);
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
