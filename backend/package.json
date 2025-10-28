@@ -13,7 +13,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "vercel-build": "prisma generate && npm run build",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate || echo 'Prisma generate failed, continuing...'"
   },
   "keywords": [],
   "author": "",
