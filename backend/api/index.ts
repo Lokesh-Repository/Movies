@@ -19,9 +19,12 @@ dotenv.config();
 
 // CORS headers function
 function setCorsHeaders(res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
 // Initialize Prisma lazily
@@ -33,18 +36,18 @@ async function getPrismaClient() {
       // Try to import from the generated location first
       let PrismaClient;
       try {
-        const generated = await import('../src/generated/prisma');
+        const generated = await import("../src/generated/prisma");
         PrismaClient = generated.PrismaClient;
       } catch {
         // Fallback to standard import
-        const standard = await import('@prisma/client');
+        const standard = await import("@prisma/client");
         PrismaClient = standard.PrismaClient;
       }
-      
+
       prisma = new PrismaClient();
-      console.log('Prisma client initialized successfully');
+      console.log("Prisma client initialized successfully");
     } catch (error) {
-      console.error('Failed to initialize Prisma:', error);
+      console.error("Failed to initialize Prisma:", error);
       throw error;
     }
   }
@@ -54,22 +57,25 @@ async function getPrismaClient() {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   setCorsHeaders(res);
-  
+
   // Handle preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }
-  
+
   // Parse request body for POST/PUT requests
-  if (req.method === 'POST' || req.method === 'PUT') {
-    if (!req.body && req.headers['content-type']?.includes('application/json')) {
-      let body = '';
-      req.on('data', chunk => {
+  if (req.method === "POST" || req.method === "PUT") {
+    if (
+      !req.body &&
+      req.headers["content-type"]?.includes("application/json")
+    ) {
+      let body = "";
+      req.on("data", (chunk) => {
         body += chunk.toString();
       });
-      await new Promise(resolve => {
-        req.on('end', () => {
+      await new Promise((resolve) => {
+        req.on("end", () => {
           try {
             req.body = JSON.parse(body);
           } catch {
@@ -80,123 +86,123 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
   }
-  
+
   // Health check
-  if (req.url === '/api/health' || req.url === '/health') {
+  if (req.url === "/api/health" || req.url === "/health") {
     return res.status(200).json({
       success: true,
-      data: { message: 'Movies & TV Shows Manager API is running!' }
+      data: { message: "Movies & TV Shows Manager API is running!" },
     });
   }
-  
+
   // Handle entries routes
-  if (req.url?.startsWith('/api/entries') || req.url?.startsWith('/entries')) {
+  if (req.url?.startsWith("/api/entries") || req.url?.startsWith("/entries")) {
     try {
       const prismaClient = await getPrismaClient();
-      
-      if (req.method === 'GET') {
+
+      if (req.method === "GET") {
         // Parse query parameters
         const url = new URL(req.url, `http://${req.headers.host}`);
-        const limit = parseInt(url.searchParams.get('limit') || '10');
-        const cursor = url.searchParams.get('cursor');
-        
+        const limit = parseInt(url.searchParams.get("limit") || "10");
+        const cursor = url.searchParams.get("cursor");
+
         // Mock data for now since we don't have a real database
         const mockEntries = [
           {
-            id: '1',
-            title: 'The Matrix',
-            type: 'MOVIE',
-            director: 'The Wachowskis',
-            budget: '$63 million',
-            location: 'Sydney, Australia',
-            duration: '136 minutes',
-            year: '1999',
+            id: "1",
+            title: "The Matrix",
+            type: "MOVIE",
+            director: "The Wachowskis",
+            budget: "$63 million",
+            location: "Sydney, Australia",
+            duration: "136 minutes",
+            year: "1999",
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           },
           {
-            id: '2',
-            title: 'Breaking Bad',
-            type: 'TV_SHOW',
-            director: 'Vince Gilligan',
-            budget: '$3 million per episode',
-            location: 'Albuquerque, New Mexico',
-            duration: '47 minutes per episode',
-            year: '2008-2013',
+            id: "2",
+            title: "Breaking Bad",
+            type: "TV_SHOW",
+            director: "Vince Gilligan",
+            budget: "$3 million per episode",
+            location: "Albuquerque, New Mexico",
+            duration: "47 minutes per episode",
+            year: "2008-2013",
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }
+            updatedAt: new Date().toISOString(),
+          },
         ];
-        
+
         return res.status(200).json({
           success: true,
           data: {
             data: mockEntries,
             hasMore: false,
-            nextCursor: undefined
-          }
+            nextCursor: undefined,
+          },
         });
       }
-      
-      if (req.method === 'POST') {
+
+      if (req.method === "POST") {
         // Mock create entry
         const newEntry = {
           id: Date.now().toString(),
           ...req.body,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
-        
+
         return res.status(201).json({
           success: true,
-          data: newEntry
+          data: newEntry,
         });
       }
-      
+
       // Handle individual entry operations (PUT, DELETE)
       const entryIdMatch = req.url.match(/\/api\/entries\/([^\/]+)/);
       if (entryIdMatch) {
         const entryId = entryIdMatch[1];
-        
-        if (req.method === 'PUT') {
+
+        if (req.method === "PUT") {
           // Mock update entry
           const updatedEntry = {
             id: entryId,
             ...req.body,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           };
-          
+
           return res.status(200).json({
             success: true,
-            data: updatedEntry
+            data: updatedEntry,
           });
         }
-        
-        if (req.method === 'DELETE') {
+
+        if (req.method === "DELETE") {
           // Mock delete entry
           return res.status(200).json({
             success: true,
-            data: { message: 'Entry deleted successfully' }
+            data: { message: "Entry deleted successfully" },
           });
         }
       }
-      
+
       return res.status(405).json({
         success: false,
-        error: { message: 'Method not allowed' }
+        error: { message: "Method not allowed" },
       });
     } catch (error) {
-      console.error('API Error:', error);
+      console.error("API Error:", error);
       return res.status(500).json({
         success: false,
-        error: { message: 'Internal server error' }
+        error: { message: "Internal server error" },
       });
     }
   }
-  
+
   // Default 404
   return res.status(404).json({
     success: false,
-    error: { message: 'Route not found' }
+    error: { message: "Route not found" },
   });
 }
