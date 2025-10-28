@@ -103,56 +103,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (req.method === "GET") {
         // Parse query parameters
         const url = new URL(req.url, `http://${req.headers.host}`);
-        const limit = parseInt(url.searchParams.get("limit") || "10");
+        const limit = parseInt(url.searchParams.get("limit") || "20");
         const cursor = url.searchParams.get("cursor");
 
-        // Mock data for now since we don't have a real database
-        const mockEntries = [
-          {
-            id: "1",
-            title: "The Matrix",
-            type: "MOVIE",
-            director: "The Wachowskis",
-            budget: "$63 million",
-            location: "Sydney, Australia",
-            duration: "136 minutes",
-            year: "1999",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: "2",
-            title: "Breaking Bad",
-            type: "TV_SHOW",
-            director: "Vince Gilligan",
-            budget: "$3 million per episode",
-            location: "Albuquerque, New Mexico",
-            duration: "47 minutes per episode",
-            year: "2008-2013",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ];
+        // Get entries from the real database
+        const whereClause = cursor ? { id: { gt: cursor } } : {};
+        
+        const entries = await prismaClient.entry.findMany({
+          where: whereClause,
+          take: limit + 1, // Take one extra to check if there are more
+          orderBy: { createdAt: 'desc' }
+        });
+
+        const hasMore = entries.length > limit;
+        const data = hasMore ? entries.slice(0, limit) : entries;
+        const nextCursor = hasMore ? data[data.length - 1].id : undefined;
 
         return res.status(200).json({
           success: true,
           data: {
-            data: mockEntries,
-            hasMore: false,
-            nextCursor: undefined,
+            data: data,
+            hasMore: hasMore,
+            nextCursor: nextCursor,
           },
         });
       }
 
       if (req.method === "POST") {
-        // Mock create entry
-        const newEntry = {
-          id: Date.now().toString(),
-          ...req.body,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
+        // Create new entry in database
+        const { title, type, director, budget, location, duration, year } = req.body;
+        
+        const newEntry = await prismaClient.entry.create({
+          data: {
+            title,
+            type,
+            director,
+            budget,
+            location,
+            duration,
+            year
+          }
+        });
+        
         return res.status(201).json({
           success: true,
           data: newEntry,
@@ -165,12 +157,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const entryId = entryIdMatch[1];
 
         if (req.method === "PUT") {
-          // Mock update entry
-          const updatedEntry = {
-            id: entryId,
-            ...req.body,
-            updatedAt: new Date().toISOString(),
-          };
+          // Update entry in database
+          const { title, type, director, budget, location, duration, year } = req.body;
+          
+          const updatedEntry = await prismaClient.entry.update({
+            where: { id: entryId },
+            data: {
+              title,
+              type,
+              director,
+              budget,
+              location,
+              duration,
+              year
+            }
+          });
 
           return res.status(200).json({
             success: true,
@@ -179,7 +180,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (req.method === "DELETE") {
-          // Mock delete entry
+          // Delete entry from database
+          await prismaClient.entry.delete({
+            where: { id: entryId }
+          });
+          
           return res.status(200).json({
             success: true,
             data: { message: "Entry deleted successfully" },
