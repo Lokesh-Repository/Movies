@@ -1,4 +1,9 @@
-src/
+src/index.ts
+src/middleware/
+src/routes/
+src/services/
+src/schemas/
+src/types/
 dist/
 node_modules/
 .env.local

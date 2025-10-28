@@ -30,7 +30,9 @@ function setCorsHeaders(res: VercelResponse, origin?: string) {
     origin.endsWith('.vercel.app')
   );
   
-  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : allowedOrigins[0]);
+  const allowedOrigin = isAllowed ? origin : allowedOrigins[0];
+  
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -42,8 +44,19 @@ let prisma: any = null;
 async function getPrismaClient() {
   if (!prisma) {
     try {
-      const { PrismaClient } = await import('@prisma/client');
+      // Try to import from the generated location first
+      let PrismaClient;
+      try {
+        const generated = await import('../src/generated/prisma');
+        PrismaClient = generated.PrismaClient;
+      } catch {
+        // Fallback to standard import
+        const standard = await import('@prisma/client');
+        PrismaClient = standard.PrismaClient;
+      }
+      
       prisma = new PrismaClient();
+      console.log('Prisma client initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Prisma:', error);
       throw error;
