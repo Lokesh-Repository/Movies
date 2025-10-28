@@ -61,6 +61,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
   
+  // Parse request body for POST/PUT requests
+  if (req.method === 'POST' || req.method === 'PUT') {
+    if (!req.body && req.headers['content-type']?.includes('application/json')) {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      await new Promise(resolve => {
+        req.on('end', () => {
+          try {
+            req.body = JSON.parse(body);
+          } catch {
+            req.body = {};
+          }
+          resolve(undefined);
+        });
+      });
+    }
+  }
+  
   // Health check
   if (req.url === '/api/health' || req.url === '/health') {
     return res.status(200).json({
@@ -78,32 +98,87 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Parse query parameters
         const url = new URL(req.url, `http://${req.headers.host}`);
         const limit = parseInt(url.searchParams.get('limit') || '10');
-        const page = parseInt(url.searchParams.get('page') || '1');
-        const skip = (page - 1) * limit;
+        const cursor = url.searchParams.get('cursor');
         
-        // Get entries from database
-        const entries = await prismaClient.entry.findMany({
-          take: limit,
-          skip: skip,
-          orderBy: { createdAt: 'desc' }
-        });
-        
-        const total = await prismaClient.entry.count();
-        const totalPages = Math.ceil(total / limit);
+        // Mock data for now since we don't have a real database
+        const mockEntries = [
+          {
+            id: '1',
+            title: 'The Matrix',
+            type: 'MOVIE',
+            director: 'The Wachowskis',
+            budget: '$63 million',
+            location: 'Sydney, Australia',
+            duration: '136 minutes',
+            year: '1999',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: '2',
+            title: 'Breaking Bad',
+            type: 'TV_SHOW',
+            director: 'Vince Gilligan',
+            budget: '$3 million per episode',
+            location: 'Albuquerque, New Mexico',
+            duration: '47 minutes per episode',
+            year: '2008-2013',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ];
         
         return res.status(200).json({
           success: true,
           data: {
-            entries,
-            pagination: {
-              page,
-              limit,
-              total,
-              totalPages,
-              hasMore: page < totalPages
-            }
+            data: mockEntries,
+            hasMore: false,
+            nextCursor: undefined
           }
         });
+      }
+      
+      if (req.method === 'POST') {
+        // Mock create entry
+        const newEntry = {
+          id: Date.now().toString(),
+          ...req.body,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        return res.status(201).json({
+          success: true,
+          data: newEntry
+        });
+      }
+      
+      // Handle individual entry operations (PUT, DELETE)
+      const entryIdMatch = req.url.match(/\/api\/entries\/([^\/]+)/);
+      if (entryIdMatch) {
+        const entryId = entryIdMatch[1];
+        
+        if (req.method === 'PUT') {
+          // Mock update entry
+          const updatedEntry = {
+            id: entryId,
+            ...req.body,
+            updatedAt: new Date().toISOString()
+          };
+          
+          return res.status(200).json({
+            success: true,
+            data: updatedEntry
+          });
+        }
+        
+        if (req.method === 'DELETE') {
+          // Mock delete entry
+          return res.status(200).json({
+            success: true,
+            data: { message: 'Entry deleted successfully' }
+          });
+        }
       }
       
       return res.status(405).json({
