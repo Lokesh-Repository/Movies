@@ -1,5 +1,6 @@
 {
   "installCommand": "npm install && npx prisma generate",
+  "buildCommand": "echo 'Skipping build - using serverless functions'",
   "rewrites": [
     {
       "source": "/(.*)",
