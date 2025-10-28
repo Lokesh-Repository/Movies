@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd frontend && npm ci --no-optional && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "npm install --no-optional"
+}
