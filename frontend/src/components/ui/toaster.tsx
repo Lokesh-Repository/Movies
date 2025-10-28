@@ -252,7 +252,7 @@ export function Toaster({ toasts: propToasts }: ToasterProps) {
                   style={{
                     fontSize: "14px",
                     lineHeight: "1.4",
-                    wordBreak: "break-words",
+                    wordBreak: "break-word",
                   }}
                 >
                   {currentToast.description}
